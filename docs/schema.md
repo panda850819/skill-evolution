@@ -284,17 +284,34 @@ change_levels:
       - type: breaking_change
 
 opportunity_rules:
+  # 使用模式規則
   usage_patterns:
     - id: low_success_rate
       condition:
         metric: success_rate
         threshold: 70
 
+  # 內容品質規則
   content_quality:
     - id: missing_evolution_metadata
       condition:
         check: has_evolution_metadata
+
+  # 單一 Skill 品質規則（4 個核心元素）
+  single_skill_quality:
+    - id: missing_core_question        # 缺少引導性問題
+    - id: weak_constraint_words        # 約束詞強度不足
+    - id: missing_quick_reference      # 缺少快速參考
+    - id: missing_output_format        # 缺少輸出格式
+
+  # Skills System 檢測規則
+  skills_system:
+    - id: potential_skills_system      # 潛在的 System 候選
+    - id: system_missing_router        # System 缺少入口路由
+    - id: system_missing_shared_rules  # System 缺少共享規則
 ```
+
+詳細規則說明請參考 [methodology.md](methodology.md)。
 
 ---
 

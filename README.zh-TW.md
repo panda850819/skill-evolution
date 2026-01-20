@@ -41,6 +41,21 @@ Skill Evolution 是一個 [Claude Code](https://docs.anthropic.com/en/docs/claud
 
 ---
 
+## Skill 設計方法論
+
+基於 [rust-skills](https://github.com/ZhangHanDong/rust-skills) 專案的洞察，我們區分兩個層次：
+
+| 層次 | 適用範圍 | 核心元素 |
+|------|----------|----------|
+| **單一 Skill** | 單一任務、單一領域 | Core Question、強約束詞、Quick Reference、輸出格式 |
+| **Skills System** | 多個相關 Skills | Router Skill、分層組織、共享規則、Hooks |
+
+> **核心洞察**：「Skill 是認知協議，塑造 Claude 如何思考問題，而非它知道什麼。」
+
+詳細指南請參考 [docs/methodology.md](docs/methodology.md)。
+
+---
+
 ## 改動分級
 
 | 級別 | 定義 | 處理方式 | 通知時機 |

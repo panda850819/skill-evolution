@@ -41,6 +41,21 @@ Skill Evolution is a framework for [Claude Code](https://docs.anthropic.com/en/d
 
 ---
 
+## Skill Design Methodology
+
+Based on insights from the [rust-skills](https://github.com/ZhangHanDong/rust-skills) project, we distinguish between two tiers:
+
+| Tier | Scope | Core Elements |
+|------|-------|---------------|
+| **Single Skill** | One task, one domain | Core Question, Strong Constraints, Quick Reference, Output Format |
+| **Skills System** | Multiple related skills | Router Skill, Layer Organization, Shared Rules, Hooks |
+
+> **Key Insight**: "A Skill is a Cognitive Protocol that shapes HOW Claude thinks, not WHAT it knows."
+
+See [docs/methodology.md](docs/methodology.md) for detailed guidelines.
+
+---
+
 ## Change Levels
 
 | Level | Definition | Handling | Notification |
