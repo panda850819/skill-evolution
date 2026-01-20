@@ -283,6 +283,91 @@ def notify_major_pending(proposals: List[Dict]) -> None:
 
 # === 應用更新 ===
 
+def apply_edit_change(skill_file: Path, change: Dict[str, Any]) -> bool:
+    """應用編輯類型的變更（before -> after 替換）"""
+    before = change.get('before', '')
+    after = change.get('after', '')
+
+    if not before or not after:
+        return False
+
+    try:
+        with open(skill_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        # 檢查 before 是否存在
+        if before not in content:
+            print(f"    ⚠️  找不到預期內容: {before[:50]}...")
+            return False
+
+        # 執行替換
+        new_content = content.replace(before, after)
+
+        # 寫回檔案
+        with open(skill_file, 'w', encoding='utf-8') as f:
+            f.write(new_content)
+
+        return True
+
+    except Exception as e:
+        print(f"    ❌ 編輯失敗: {e}")
+        return False
+
+
+def apply_add_change(skill_file: Path, change: Dict[str, Any]) -> bool:
+    """應用新增類型的變更（在指定位置新增內容）"""
+    add_content = change.get('add', '')
+    section = change.get('section', '')
+    after = change.get('after', '')  # 在哪個 section 之後插入
+    before = change.get('before', '')  # 在哪個 section 之前插入
+
+    if not add_content:
+        return False
+
+    try:
+        with open(skill_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        # 決定插入位置
+        if section == 'frontmatter':
+            # 在 frontmatter 中新增
+            match = re.search(r'^---\n(.*?)\n---', content, re.DOTALL)
+            if match:
+                frontmatter = match.group(1)
+                new_frontmatter = frontmatter.rstrip() + f"\n{add_content}\n"
+                new_content = content.replace(match.group(0), f"---\n{new_frontmatter}---")
+            else:
+                return False
+
+        elif after:
+            # 在指定內容之後插入
+            if after not in content:
+                print(f"    ⚠️  找不到插入點: {after[:50]}...")
+                return False
+            new_content = content.replace(after, f"{after}\n\n{add_content}")
+
+        elif before:
+            # 在指定內容之前插入
+            if before not in content:
+                print(f"    ⚠️  找不到插入點: {before[:50]}...")
+                return False
+            new_content = content.replace(before, f"{add_content}\n\n{before}")
+
+        else:
+            # 預設：附加到檔案末尾
+            new_content = content.rstrip() + f"\n\n{add_content}\n"
+
+        # 寫回檔案
+        with open(skill_file, 'w', encoding='utf-8') as f:
+            f.write(new_content)
+
+        return True
+
+    except Exception as e:
+        print(f"    ❌ 新增失敗: {e}")
+        return False
+
+
 def apply_proposal(proposal: Dict[str, Any], dry_run: bool = False) -> Tuple[bool, str]:
     """應用單個提案"""
     skill_name = proposal['skill_id']
@@ -312,13 +397,26 @@ def apply_proposal(proposal: Dict[str, Any], dry_run: bool = False) -> Tuple[boo
 
         # 4. 應用變更
         changes = proposal.get('changes', [])
+        skill_file = SKILLS_DIR / skill_name / "SKILL.md"
+
         for change in changes:
             change_type = change.get('type', 'review')
 
             if change_type == 'edit':
-                # 這裡需要根據具體變更類型實作
-                # 目前只是更新版本號
-                pass
+                # 執行字串替換
+                success = apply_edit_change(skill_file, change)
+                if success:
+                    print(f"  ✅ 已修改: {change.get('section', 'unknown')}")
+                else:
+                    print(f"  ⚠️  修改失敗: {change.get('section', 'unknown')}")
+
+            elif change_type == 'add':
+                # 新增內容
+                success = apply_add_change(skill_file, change)
+                if success:
+                    print(f"  ✅ 已新增: {change.get('section', 'unknown')}")
+                else:
+                    print(f"  ⚠️  新增失敗: {change.get('section', 'unknown')}")
 
             elif change_type == 'review':
                 # review 類型只是建議，不做實際修改

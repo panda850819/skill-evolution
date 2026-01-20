@@ -1,0 +1,30 @@
+proposal_id: test-skill-abc123
+skill_id: test-skill
+created_at: "2025-01-20T10:00:00+08:00"
+expires_at: "2025-01-27T10:00:00+08:00"
+change_level: patch
+status: pending
+
+source_type: session-analysis
+source_session_id: null
+source_trigger: trigger_improvement
+
+title: "Add trigger word 'validate'"
+description: |
+  Analysis found users trying to trigger test-skill with "validate"
+  but failing due to missing trigger word.
+
+changes:
+  - file: SKILL.md
+    type: edit
+    section: frontmatter.description
+    before: 'Triggers on "test skill", "testing"'
+    after: 'Triggers on "test skill", "testing", "validate"'
+
+impact:
+  - Improve skill trigger rate
+  - No impact on existing functionality
+
+backup_path: null
+applied_at: null
+rolled_back_at: null

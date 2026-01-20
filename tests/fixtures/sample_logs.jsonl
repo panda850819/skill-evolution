@@ -1,0 +1,5 @@
+{"timestamp": "2025-01-20T10:00:00+08:00", "skill": "test-skill", "action": "invoked", "result": "success", "duration_ms": 1500}
+{"timestamp": "2025-01-20T11:00:00+08:00", "skill": "test-skill", "action": "invoked", "result": "success", "duration_ms": 1200}
+{"timestamp": "2025-01-20T12:00:00+08:00", "skill": "test-skill", "action": "skipped", "reason": "user_cancelled"}
+{"timestamp": "2025-01-20T13:00:00+08:00", "skill": "unused-skill", "action": "invoked", "result": "failure", "error": "timeout"}
+{"timestamp": "2025-01-20T14:00:00+08:00", "action": "snapshot", "skill_count": 2, "skills": ["test-skill", "unused-skill"]}

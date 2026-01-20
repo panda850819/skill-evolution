@@ -120,45 +120,55 @@ collect_skill_invocations() {
     fi
 }
 
-# 從 session-env 目錄讀取最近的 session 數據
+# 從 .claude/projects 解析最近的 session 數據
 parse_recent_sessions() {
-    local session_env_dir="$HOME/.claude/session-env"
+    local projects_dir="$HOME/.claude/projects"
 
-    if [[ ! -d "$session_env_dir" ]]; then
-        log_warn "Session env 目錄不存在: $session_env_dir"
+    if [[ ! -d "$projects_dir" ]]; then
+        log_warn "Projects 目錄不存在: $projects_dir"
         return
     fi
 
-    # 找出最近 1 小時內的 session 檔案
-    find "$session_env_dir" -name "*.json" -mmin -60 2>/dev/null | while read -r session_file; do
-        if [[ -f "$session_file" ]]; then
-            # 解析 session 檔案（如果存在 skill 相關數據）
-            local session_data=$(cat "$session_file" 2>/dev/null || echo "{}")
-
-            # 檢查是否有 skill 相關信息
-            local has_skill=$(echo "$session_data" | jq -r 'has("skill") // false')
-
-            if [[ "$has_skill" == "true" ]]; then
-                local skill_name=$(echo "$session_data" | jq -r '.skill // "unknown"')
-                local skill_result=$(echo "$session_data" | jq -r '.result // "success"')
-
-                local log_entry=$(jq -n \
-                    --arg ts "$TIMESTAMP" \
-                    --arg skill "$skill_name" \
-                    --arg action "invoked" \
-                    --arg result "$skill_result" \
-                    --arg source "session-env" \
-                    '{
-                        timestamp: $ts,
-                        skill: $skill,
-                        action: $action,
-                        result: $result,
-                        source: $source
-                    }')
-
-                echo "$log_entry"
-            fi
+    # 找出最近 1 小時內修改的 .jsonl 檔案
+    find "$projects_dir" -name "*.jsonl" -mmin -60 2>/dev/null | while read -r session_file; do
+        if [[ ! -f "$session_file" ]]; then
+            continue
         fi
+
+        # 解析 JSONL 檔案中的 skill 調用
+        while IFS= read -r line; do
+            # 跳過空行
+            [[ -z "$line" ]] && continue
+
+            # 檢查是否有 Skill tool 調用
+            local has_skill_tool=$(echo "$line" | jq -r 'select(.content[]?.type == "tool_use" and .content[]?.name == "Skill") | .content[] | select(.type == "tool_use") | .name' 2>/dev/null)
+
+            if [[ "$has_skill_tool" == "Skill" ]]; then
+                # 提取 skill 名稱
+                local skill_name=$(echo "$line" | jq -r '.content[] | select(.type == "tool_use" and .name == "Skill") | .input.skill' 2>/dev/null)
+
+                if [[ -n "$skill_name" ]]; then
+                    # 從檔案內容判斷結果（簡化：假設有回應就是成功）
+                    local result="success"
+
+                    local log_entry=$(jq -n \
+                        --arg ts "$TIMESTAMP" \
+                        --arg skill "$skill_name" \
+                        --arg action "invoked" \
+                        --arg result "$result" \
+                        --arg source "session-log" \
+                        '{
+                            timestamp: $ts,
+                            skill: $skill,
+                            action: $action,
+                            result: $result,
+                            source: $source
+                        }')
+
+                    echo "$log_entry"
+                fi
+            fi
+        done < "$session_file"
     done
 }
 
