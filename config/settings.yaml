@@ -1,0 +1,200 @@
+# ============================================================
+# Skill Evolution - 全局設定
+# ============================================================
+# 此檔案定義 skill evolution 框架的全局配置
+# 修改後立即生效，無需重啟
+# ============================================================
+
+# 版本
+config_version: "1.0.0"
+updated_at: "2025-01-11"
+
+# ============================================================
+# 通知設定
+# ============================================================
+
+notification:
+  # 是否啟用通知
+  enabled: true
+
+  # Telegram 設定
+  telegram:
+    enabled: true
+    bot_name: n8n_monitors_bot
+    chat_id: "-5008242976"
+    # Token 從環境變數讀取: TELEGRAM_BOT_TOKEN
+
+  # 通知時機
+  triggers:
+    # Patch 應用後通知
+    patch_applied: true
+    # Minor 應用前通知（等待 24 小時）
+    minor_pending: true
+    # Major 需確認時通知
+    major_pending: true
+    # 週報生成時通知
+    weekly_report: true
+    # 錯誤發生時通知
+    on_error: true
+
+# ============================================================
+# 自動演進設定
+# ============================================================
+
+auto_evolution:
+  # 全局開關
+  enabled: true
+
+  # 各級別設定
+  levels:
+    patch:
+      # 是否自動應用
+      auto_apply: true
+      # 通知時機：after（應用後）
+      notify: after
+      # 延遲時間（分鐘）
+      delay_minutes: 0
+
+    minor:
+      auto_apply: true
+      # 通知時機：before（應用前）
+      notify: before
+      # 延遲時間（24 小時）
+      delay_minutes: 1440
+      # 是否可取消
+      cancellable: true
+
+    major:
+      auto_apply: false
+      notify: before
+      # 需要明確確認
+      require_confirm: true
+      # 提案過期時間（天）
+      expires_days: 7
+
+# ============================================================
+# 數據收集設定
+# ============================================================
+
+data_collection:
+  # 是否啟用自動收集
+  enabled: true
+
+  # 收集來源
+  sources:
+    # 從 SessionEnd hook 收集
+    session_end: true
+    # 從 claude-mem 查詢
+    claude_mem: true
+    # 從 session-env 解析
+    session_env: true
+
+  # 保留設定
+  retention:
+    # 日誌保留天數
+    logs_days: 30
+    # 報告保留天數
+    reports_days: 90
+    # 備份保留天數
+    backups_days: 60
+
+# ============================================================
+# 分析設定
+# ============================================================
+
+analysis:
+  # 預設分析天數
+  default_days: 7
+
+  # 閾值設定
+  thresholds:
+    # 低於此成功率觸發警告
+    low_success_rate: 70
+    # 跳過次數超過此值觸發警告
+    high_skip_count: 3
+    # 未使用天數超過此值觸發警告
+    unused_days: 30
+
+  # 要檢查的必要 sections
+  required_sections:
+    - "Out of Scope"
+    - "Verification"
+
+  # 建議的 sections
+  recommended_sections:
+    - "Integrations"
+    - "When to Use"
+    - "Implementation Checklist"
+
+# ============================================================
+# 排程設定
+# ============================================================
+
+schedule:
+  # 分析排程
+  analysis:
+    # 是否啟用自動分析
+    enabled: false
+    # cron 表達式（每週日 08:00）
+    cron: "0 8 * * 0"
+
+  # 清理排程
+  cleanup:
+    enabled: true
+    # 每天 03:00 清理
+    cron: "0 3 * * *"
+
+# ============================================================
+# 排除設定
+# ============================================================
+
+exclude:
+  # 排除的 skills（不參與演進）
+  skills:
+    - "_archived"
+    - "_shared"
+
+  # 排除的目錄
+  directories:
+    - "references"
+    - "examples"
+
+# ============================================================
+# 進階設定
+# ============================================================
+
+advanced:
+  # 是否啟用詳細日誌
+  verbose_logging: false
+
+  # 最大並行處理數
+  max_parallel: 5
+
+  # 提案 ID 前綴
+  proposal_id_prefix: ""
+
+  # 備份壓縮
+  compress_backups: false
+
+# ============================================================
+# 整合設定
+# ============================================================
+
+integrations:
+  # claude-mem 整合
+  claude_mem:
+    enabled: true
+    # 搜尋限制
+    search_limit: 50
+
+  # hooks 整合
+  hooks:
+    enabled: true
+    # 使用的 hooks
+    session_end: true
+
+  # skill-creator 整合
+  skill_creator:
+    enabled: true
+    # 自動加入 evolution metadata
+    auto_add_metadata: true

@@ -1,0 +1,349 @@
+# ============================================================
+# Skill Evolution - 演進規則配置
+# ============================================================
+# 此檔案定義演進機會的識別規則和處理方式
+# ============================================================
+
+# 版本
+rules_version: "1.0.0"
+updated_at: "2025-01-11"
+
+# ============================================================
+# 改動分級規則
+# ============================================================
+
+change_levels:
+  # === Patch 級別 ===
+  # 修正層級 - 低風險，可自動執行
+  patch:
+    description: "修正層級 - typo、格式修正、補充說明"
+    risk: low
+    auto_apply: true
+
+    # 屬於 patch 的改動類型
+    includes:
+      - type: typo_fix
+        description: 修正錯字或文法
+        patterns:
+          - "typo"
+          - "spelling"
+          - "grammar"
+
+      - type: format_fix
+        description: 調整格式或縮排
+        patterns:
+          - "format"
+          - "indent"
+          - "whitespace"
+
+      - type: add_trigger
+        description: 新增觸發詞（不改變邏輯）
+        patterns:
+          - "add trigger"
+          - "新增觸發"
+
+      - type: clarify_description
+        description: 補充說明細節
+        patterns:
+          - "clarify"
+          - "補充說明"
+
+      - type: add_example
+        description: 新增範例
+        patterns:
+          - "add example"
+          - "新增範例"
+
+  # === Minor 級別 ===
+  # 小功能層級 - 中等風險，需通知
+  minor:
+    description: "小功能層級 - 新增 section、調整流程順序"
+    risk: medium
+    auto_apply: true
+    delay_hours: 24
+
+    includes:
+      - type: add_section
+        description: 新增 workflow 或 checklist section
+        patterns:
+          - "add section"
+          - "新增 section"
+
+      - type: reorder_workflow
+        description: 調整現有流程順序
+        patterns:
+          - "reorder"
+          - "調整順序"
+
+      - type: extend_checklist
+        description: 擴展 checklist 項目
+        patterns:
+          - "extend checklist"
+          - "新增 checklist"
+
+      - type: improve_integration
+        description: 改進整合設定
+        patterns:
+          - "improve integration"
+          - "整合改進"
+
+      - type: add_verification
+        description: 新增驗證步驟
+        patterns:
+          - "add verification"
+          - "新增驗證"
+
+  # === Major 級別 ===
+  # 大功能層級 - 高風險，需確認
+  major:
+    description: "大功能層級 - 刪除功能、改變核心邏輯"
+    risk: high
+    auto_apply: false
+    require_confirm: true
+
+    includes:
+      - type: remove_feature
+        description: 刪除現有功能
+        patterns:
+          - "remove"
+          - "delete"
+          - "刪除"
+
+      - type: change_core_logic
+        description: 改變核心邏輯
+        patterns:
+          - "change logic"
+          - "改變邏輯"
+          - "重構"
+
+      - type: breaking_change
+        description: Breaking changes
+        patterns:
+          - "breaking"
+          - "不相容"
+
+      - type: remove_integration
+        description: 移除整合
+        patterns:
+          - "remove integration"
+          - "移除整合"
+
+      - type: deprecate
+        description: 廢棄 skill
+        patterns:
+          - "deprecate"
+          - "廢棄"
+
+# ============================================================
+# 機會識別規則
+# ============================================================
+
+opportunity_rules:
+  # === 使用模式規則 ===
+  usage_patterns:
+    # 低成功率
+    - id: low_success_rate
+      name: 低成功率 Skill
+      description: 成功率低於閾值，可能需要修復
+      condition:
+        metric: success_rate
+        operator: lt
+        threshold: 70  # 百分比
+        min_invocations: 5
+      level: minor
+      action: review_workflow
+
+    # 高跳過率
+    - id: high_skip_rate
+      name: 高跳過率 Skill
+      description: 經常被跳過，可能觸發詞需要改進
+      condition:
+        metric: skip_count
+        operator: gt
+        threshold: 3
+      level: patch
+      action: review_triggers
+
+    # 未使用
+    - id: unused_skill
+      name: 未使用 Skill
+      description: 長期未被調用
+      condition:
+        metric: days_since_last_use
+        operator: gt
+        threshold: 30
+      level: major
+      action: consider_deprecation
+
+    # 高頻使用
+    - id: high_frequency
+      name: 高頻使用 Skill
+      description: 使用頻率高，應優先優化
+      condition:
+        metric: invocation_count
+        operator: gt
+        threshold: 20
+        period_days: 7
+      level: patch
+      action: prioritize_optimization
+
+  # === 內容品質規則 ===
+  content_quality:
+    # 缺少 evolution metadata
+    - id: missing_evolution_metadata
+      name: 缺少 Evolution Metadata
+      description: Skill 無法參與自動演進
+      condition:
+        check: has_evolution_metadata
+        expected: true
+      level: patch
+      action: add_metadata
+
+    # 缺少必要 section
+    - id: missing_required_section
+      name: 缺少必要 Section
+      description: 缺少建議的 section
+      condition:
+        check: has_sections
+        sections:
+          - "Out of Scope"
+          - "Verification"
+      level: minor
+      action: add_section
+
+    # 缺少 description
+    - id: missing_description
+      name: 缺少 Description
+      description: Frontmatter 缺少 description
+      condition:
+        check: has_frontmatter_field
+        field: description
+      level: patch
+      action: add_description
+
+    # 觸發詞過少
+    - id: few_triggers
+      name: 觸發詞過少
+      description: 觸發詞數量少於建議值
+      condition:
+        check: trigger_count
+        operator: lt
+        threshold: 3
+      level: patch
+      action: add_triggers
+
+# ============================================================
+# 自動修復模板
+# ============================================================
+
+fix_templates:
+  # 新增 evolution metadata
+  add_evolution_metadata:
+    target: frontmatter
+    template: |
+      # Evolution Metadata
+      evolution:
+        enabled: true
+        version: "1.0.0"
+        stability: stable
+        auto_evolve: patch
+        created: {{date}}
+        updated: {{date}}
+        history: []
+
+  # 新增 Out of Scope section
+  add_out_of_scope:
+    target: section
+    after: "## Integrations"
+    template: |
+      ---
+
+      ## Out of Scope
+
+      - **[待定義]** - 請補充此 skill 不處理的事項
+
+  # 新增 Verification section
+  add_verification:
+    target: section
+    before: "## Safety"
+    template: |
+      ---
+
+      ## Verification
+
+      驗證命令：
+      ```bash
+      # 待補充
+      ```
+
+      完成標準：
+      - [ ] [待定義]
+
+# ============================================================
+# 排除規則
+# ============================================================
+
+exclusions:
+  # 排除的 skill 名稱
+  skills:
+    - "_archived"
+    - "_shared"
+    - "skill-evolution"  # 自己不參與自動演進
+
+  # 排除的改動模式
+  patterns:
+    # 不自動修改這些 section
+    - section: "Safety and Escalation"
+      reason: "安全相關，需人工審查"
+
+    - section: "Integrations"
+      reason: "整合關係需人工確認"
+
+# ============================================================
+# 優先級設定
+# ============================================================
+
+priorities:
+  # 高優先級（先處理）
+  high:
+    - condition: high_frequency
+    - condition: low_success_rate
+
+  # 中優先級
+  medium:
+    - condition: missing_required_section
+    - condition: high_skip_rate
+
+  # 低優先級（後處理）
+  low:
+    - condition: unused_skill
+    - condition: few_triggers
+
+# ============================================================
+# 驗證規則
+# ============================================================
+
+validation:
+  # 應用更新前的驗證
+  pre_apply:
+    # 檢查備份是否存在
+    - check: backup_exists
+      required: true
+
+    # 檢查語法
+    - check: valid_yaml_frontmatter
+      required: true
+
+    # 檢查版本格式
+    - check: valid_semver
+      required: true
+
+  # 應用更新後的驗證
+  post_apply:
+    # 檢查檔案可讀
+    - check: file_readable
+      required: true
+
+    # 檢查 frontmatter 完整
+    - check: frontmatter_complete
+      required: true
