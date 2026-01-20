@@ -174,6 +174,10 @@ def analyze_usage_patterns(logs: List[Dict], skills: List[str]) -> Dict[str, Ski
     metrics = {skill: SkillMetrics(skill_name=skill) for skill in skills}
 
     for log in logs:
+        # 跳過非 dict 類型的日誌項
+        if not isinstance(log, dict):
+            continue
+
         skill = log.get('skill')
         if skill and skill in metrics:
             m = metrics[skill]
