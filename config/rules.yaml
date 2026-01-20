@@ -232,16 +232,151 @@ opportunity_rules:
       level: patch
       action: add_triggers
 
+  # === 單一 Skill 品質規則 ===
+  # 基於 rust-skills 方法論，聚焦 4 個核心設計元素
+  single_skill_quality:
+    # 1. Core Question - 引導思考
+    - id: missing_core_question
+      name: 缺少引導性問題
+      description: Skill 缺少 Core Question 或 Decision Framework
+      condition:
+        check: has_cognitive_element
+        patterns:
+          - "Core Question"
+          - "Decision Framework"
+          - "引導性問題"
+          - "思考框架"
+      level: minor
+      action: add_core_question
+
+    # 2. 強約束詞 - 提高遵循率
+    - id: weak_constraint_words
+      name: 約束詞強度不足
+      description: 核心指令使用弱約束詞（can, may, consider）
+      condition:
+        check: constraint_word_ratio
+        strong_words:
+          - "CRITICAL"
+          - "MUST"
+          - "NEVER"
+          - "MANDATORY"
+          - "REQUIRED"
+        weak_words:
+          - "you can"
+          - "you may"
+          - "consider"
+          - "optionally"
+        min_strong_ratio: 0.5  # 強約束詞應佔多數
+      level: patch
+      action: strengthen_constraints
+
+    # 3. Quick Reference - 快速決策
+    - id: missing_quick_reference
+      name: 缺少快速參考
+      description: 沒有 Quick Reference 表格或決策樹
+      condition:
+        check: has_quick_reference
+        patterns:
+          - "Quick Reference"
+          - "Decision Tree"
+          - "參考表"
+          - "決策表"
+          - "| 情境 |"
+          - "| 選擇 |"
+      level: minor
+      action: add_quick_reference
+
+    # 4. MANDATORY OUTPUT - 輸出格式（可選）
+    - id: missing_output_format
+      name: 缺少輸出格式定義
+      description: 需要固定輸出格式但未定義
+      condition:
+        check: needs_output_format
+        indicators:
+          - "generate"
+          - "create"
+          - "output"
+          - "產生"
+          - "生成"
+        patterns:
+          - "MANDATORY OUTPUT"
+          - "REQUIRED FORMAT"
+          - "必須輸出"
+          - "輸出格式"
+      level: minor
+      action: add_output_format
+      note: 只在 Skill 需要固定輸出時建議
+
+    # 觸發詞多語言覆蓋
+    - id: missing_multilingual_triggers
+      name: 觸發詞缺少多語言
+      description: 觸發詞只有單一語言
+      condition:
+        check: trigger_languages
+        required:
+          - english
+          - chinese
+      level: patch
+      action: add_multilingual_triggers
+
+  # === Skills System 檢測規則 ===
+  # 識別潛在的 Skills System 和改進機會
+  skills_system:
+    # 潛在的 System 候選
+    - id: potential_skills_system
+      name: 潛在的 Skills System
+      description: 多個相關 Skills 可組成 System
+      condition:
+        check: related_skills_cluster
+        min_related: 3
+        similarity_threshold: 0.6
+      level: major
+      action: suggest_system_design
+      note: 建議而非必須，由用戶決定是否需要
+
+    # 缺少 Router（針對已識別的 System）
+    - id: system_missing_router
+      name: System 缺少入口路由
+      description: Skills System 沒有 Router Skill
+      condition:
+        check: is_skills_system
+        has_router: false
+      level: major
+      action: create_router_skill
+
+    # System 共享規則
+    - id: system_missing_shared_rules
+      name: System 缺少共享規則
+      description: System 內 Skills 有重複內容可抽取
+      condition:
+        check: is_skills_system
+        duplicated_content_threshold: 20  # 百分比
+      level: minor
+      action: extract_shared_rules
+
+    # System Hook 配置
+    - id: system_missing_hooks
+      name: System 可能需要 Hook
+      description: System 觸發率可能受益於 Hook 機制
+      condition:
+        check: is_skills_system
+        has_hooks: false
+        trigger_complexity: high
+      level: minor
+      action: suggest_hook_config
+      note: Hook 是可選的，只在觸發率低時建議
+
 # ============================================================
 # 自動修復模板
 # ============================================================
 
 fix_templates:
+  # === 基礎模板 ===
+
   # 新增 evolution metadata
   add_evolution_metadata:
     target: frontmatter
     template: |
-      # Evolution Metadata
       evolution:
         enabled: true
         version: "1.0.0"
@@ -254,30 +389,211 @@ fix_templates:
   # 新增 Out of Scope section
   add_out_of_scope:
     target: section
-    after: "## Integrations"
+    after: "## Workflow"
     template: |
       ---
 
       ## Out of Scope
 
-      - **[待定義]** - 請補充此 skill 不處理的事項
+      - [這個 Skill 不處理的事項]
 
   # 新增 Verification section
   add_verification:
     target: section
-    before: "## Safety"
+    position: end
     template: |
       ---
 
       ## Verification
 
-      驗證命令：
       ```bash
-      # 待補充
+      # 驗證命令
       ```
 
       完成標準：
-      - [ ] [待定義]
+      - [ ] [檢查項]
+
+  # === 單一 Skill 核心模板（4 個）===
+
+  # 1. Core Question - 引導思考
+  add_core_question:
+    target: section
+    position: after_frontmatter
+    template: |
+      ## Core Question
+
+      **[引導性問題 - 不是「這是什麼」而是「為什麼」「何時」]?**
+
+  # 2. 強化約束詞
+  strengthen_constraints:
+    target: inline_replacement
+    scope: workflow_sections
+    patterns:
+      - from: "you can"
+        to: "you MUST"
+      - from: "you may"
+        to: "you SHOULD"
+      - from: "consider using"
+        to: "REQUIRED:"
+
+  # 3. Quick Reference 表格
+  add_quick_reference:
+    target: section
+    after: "## Core Question"
+    template: |
+      ## Quick Reference
+
+      | 情境 | 選擇 | 原因 |
+      |------|------|------|
+      | [情境 1] | [方案 A] | [說明] |
+      | [情境 2] | [方案 B] | [說明] |
+
+  # 4. MANDATORY OUTPUT（可選）
+  add_output_format:
+    target: section
+    position: end
+    template: |
+      ---
+
+      ## MANDATORY OUTPUT FORMAT
+
+      Your response MUST include:
+
+      ### Analysis
+      [問題分析]
+
+      ### Solution
+      [解決方案]
+
+      CRITICAL: Do not skip any section.
+
+  # 多語言觸發詞
+  add_multilingual_triggers:
+    target: frontmatter
+    field: description
+    append: |
+      Triggers on: [english keywords], [中文關鍵詞]
+
+  # === Skills System 模板（進階）===
+
+  # Router Skill 模板
+  create_router_skill:
+    target: new_skill
+    template: |
+      ---
+      name: {{system_name}}-router
+      description: |
+        CRITICAL: Entry point for {{system_name}} system. Triggers on:
+        [廣泛的關鍵詞]
+      ---
+
+      # {{system_name}} Router
+
+      ## Routing Logic
+
+      CRITICAL: Analyze the question and load appropriate Skills.
+
+      | 關鍵詞 | 加載的 Skill |
+      |--------|-------------|
+      | [詞 1] | [skill-a]   |
+      | [詞 2] | [skill-b]   |
+
+  # 擴展觸發詞
+  expand_triggers:
+    target: frontmatter
+    field: description
+    append: |
+
+      Triggers on:
+      - English: {{english_triggers}}
+      - 中文: {{chinese_triggers}}
+      - Error patterns: {{error_patterns}}
+      - Question words: how, why, what, when, 怎麼, 如何, 為什麼
+
+  # 新增決策框架
+  add_decision_framework:
+    target: section
+    after: "## Core Question"
+    template: |
+      ## Quick Reference
+
+      ### Decision Tree
+      ```
+      Start
+        ↓
+      [Key Question 1]?
+        ├─ YES → [Action A]
+        └─ NO → [Key Question 2]?
+              ├─ YES → [Action B]
+              └─ NO → [Action C]
+      ```
+
+      ### Common Patterns
+
+      | Pattern | When to Use | Example |
+      |---------|-------------|---------|
+      | [Pattern 1] | [Condition] | [Code example] |
+      | [Pattern 2] | [Condition] | [Code example] |
+
+  # 完善 Hook 設置
+  complete_hook_setup:
+    target: multi_file
+    creates:
+      - hooks/hooks.json
+      - .claude/hooks/eval-hook.sh
+    updates:
+      - file: plugin.json
+        add: |
+          "hooks": "./hooks/hooks.json"
+
+  # 增強 Hook 正則
+  enhance_hook_regex:
+    target: hooks/hooks.json
+    field: matcher
+    transform: convert_to_regex
+    examples: |
+      (?i)(keyword1|keyword2|E0\d{3}|怎麼|如何|why|how)
+
+  # 新增雙技能加載
+  add_dual_loading:
+    target: section
+    position: after_frontmatter
+    template: |
+      ## Skill Loading Strategy
+
+      CRITICAL: This skill works in conjunction with other skills.
+
+      ### Domain Detection
+
+      | Keywords in Question | Additional Skill to Load |
+      |---------------------|-------------------------|
+      | [Domain keyword 1]  | [Related skill 1]       |
+      | [Domain keyword 2]  | [Related skill 2]       |
+
+      **IMPORTANT**: If domain keywords are detected, load BOTH this skill and the domain-specific skill.
+
+  # 創建父子結構
+  create_parent_child_structure:
+    target: multi_skill
+    description: |
+      Creates parent-child skill structure:
+      - parent_skill/SKILL.md (broad triggers, overview)
+      - parent_skill/references/shared-rules.md (common config)
+      - child_skill_1/SKILL.md (specific domain)
+      - child_skill_1/references/shared-rules.md → symlink
+      - child_skill_2/SKILL.md
+      - child_skill_2/references/shared-rules.md → symlink
+
+  # 抽取共享規則
+  extract_shared_rules:
+    target: references
+    creates:
+      - file: references/shared-rules.md
+        extract: common_content
+    updates:
+      - all_related_skills:
+          add: |
+            **IMPORTANT: Before proceeding, read `./references/shared-rules.md` for common guidelines.**
 
 # ============================================================
 # 排除規則
